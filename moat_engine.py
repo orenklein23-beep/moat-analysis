@@ -1,163 +1,116 @@
-import os
 import json
+import os
 from datetime import datetime
+
+import streamlit as st
 from openai import OpenAI
 
+# =========================
+# API SETUP
+# =========================
+
+api_key = os.getenv("GROQ_API_KEY")
+
+try:
+    if not api_key:
+        api_key = st.secrets["GROQ_API_KEY"]
+except:
+    pass
+
+if not api_key:
+    st.error("Missing GROQ_API_KEY")
+    st.stop()
+
 client = OpenAI(
-    api_key=os.getenv("GROQ_API_KEY"),
+    api_key=api_key,
     base_url="https://api.groq.com/openai/v1"
 )
 
+# =========================
+# HISTORY FILE
+# =========================
+
 HISTORY_FILE = "moat_history.json"
 
-# -----------------------------
-# HISTORY SYSTEM
-# -----------------------------
-def load_history():
-    try:
-        if not os.path.exists(HISTORY_FILE):
-            return {}
+# =========================
+# SAVE HISTORY
+# =========================
 
+def save_history(company, analysis_type):
+    history = []
+
+    if os.path.exists(HISTORY_FILE):
+        try:
+            with open(HISTORY_FILE, "r") as f:
+                history = json.load(f)
+        except:
+            history = []
+
+    history.append({
+        "company": company,
+        "type": analysis_type,
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    })
+
+    with open(HISTORY_FILE, "w") as f:
+        json.dump(history[-50:], f, indent=2)
+
+# =========================
+# GET HISTORY
+# =========================
+
+def get_history():
+    if not os.path.exists(HISTORY_FILE):
+        return []
+
+    try:
         with open(HISTORY_FILE, "r") as f:
             return json.load(f)
-
     except:
-        return {}
+        return []
 
+# =========================
+# SINGLE MOAT ANALYSIS
+# =========================
 
-def save_history(data):
-    with open(HISTORY_FILE, "w") as f:
-        json.dump(data, f, indent=2)
-
-
-# -----------------------------
-# INDUSTRY WEIGHTS
-# -----------------------------
-INDUSTRY_WEIGHTS = {
-    "default": {
-        "focus": "balanced"
-    },
-    "saas": {
-        "focus": "switching costs and network effects"
-    },
-    "consumer": {
-        "focus": "brand and pricing power"
-    },
-    "semiconductor": {
-        "focus": "scale advantage"
-    },
-    "financials": {
-        "focus": "scale and pricing power"
-    }
-}
-
-
-# -----------------------------
-# INDUSTRY DETECTION
-# -----------------------------
-def detect_industry(company):
-
-    c = company.lower()
-
-    if any(x in c for x in ["apple", "microsoft", "google", "salesforce"]):
-        return "saas"
-
-    if any(x in c for x in ["nike", "coca", "pepsi", "lvmh"]):
-        return "consumer"
-
-    if any(x in c for x in ["nvidia", "amd", "intel"]):
-        return "semiconductor"
-
-    if any(x in c for x in ["jpmorgan", "visa", "mastercard"]):
-        return "financials"
-
-    return "default"
-
-
-# -----------------------------
-# SYSTEM PROMPT
-# -----------------------------
-MOAT_PROMPT = """
-You are a senior hedge fund equity analyst.
-
-Evaluate competitive advantages using institutional-level reasoning.
-
-CORE REQUIREMENTS:
-- Be skeptical
-- Avoid hype
-- Avoid inflated scores
-- Detect fragile or cyclical advantages
-
-MOAT CATEGORIES:
-- Switching Costs
-- Network Effects
-- Pricing Power
-- Brand Strength
-- Scale Advantage
-- Regulatory Barriers
-
-SCORING:
-0–2 = no moat
-3–4 = weak
-5–6 = average
-7–8 = strong
-9–10 = exceptional
-
-IMPORTANT:
-Final moat score MUST logically align with category analysis.
-
-EDGE CASE DETECTION:
-Flag:
-- hype-driven narratives
-- cyclical businesses
-- temporary advantages
-- weak durability
-
-OUTPUT FORMAT:
-
-Moat Score: X/10
-Moat Tier: Elite / Strong / Average / Weak
-Moat Durability: Short / Medium / Long
-
-Switching Costs: explanation
-Network Effects: explanation
-Pricing Power: explanation
-Brand Strength: explanation
-Scale Advantage: explanation
-Regulatory Barriers: explanation
-
-Industry Context:
-- explain industry-specific moat importance
-
-Moat Risks:
-- bullets
-
-Edge Case Flags:
-- bullets
-
-Conclusion:
-1–2 sentence institutional verdict
-"""
-
-
-# -----------------------------
-# CONSISTENCY AUDIT
-# -----------------------------
-def consistency_check(result):
+def analyze_moat(company):
 
     prompt = f"""
-Audit this moat analysis.
+You are an elite institutional equity analyst.
 
-Check:
-- score consistency
-- overrating
-- weak reasoning
-- hype bias
+Your job is to deeply analyze the competitive moat of {company}.
 
-Return short audit summary.
+Analyze using these categories:
 
-Analysis:
-{result}
+1. Brand Power
+2. Network Effects
+3. Switching Costs
+4. Cost Advantages
+5. Data Advantages
+6. Ecosystem Lock-in
+7. Management Quality
+8. Pricing Power
+9. Regulatory Advantages
+10. Long-Term Survivability
+
+For EACH category:
+- Give a score out of 10
+- Explain WHY
+- Explain risks to the moat
+
+Then provide:
+- Overall moat score out of 100
+- Moat durability rating
+- Biggest strength
+- Biggest weakness
+- 5-year moat outlook
+- Final investment-style conclusion
+
+Formatting rules:
+- Clean formatting
+- No markdown tables
+- No weird separators
+- Professional hedge-fund tone
 """
 
     response = client.chat.completions.create(
@@ -165,90 +118,203 @@ Analysis:
         messages=[
             {
                 "role": "system",
-                "content": "You audit financial reasoning."
+                "content": "You are a top-tier hedge fund moat analyst."
             },
             {
                 "role": "user",
                 "content": prompt
             }
-        ]
+        ],
+        temperature=0.5,
+        max_tokens=2500
     )
+
+    save_history(company, "Single Analysis")
 
     return response.choices[0].message.content
 
+# =========================
+# COMPARE MOATS
+# =========================
 
-# -----------------------------
-# SINGLE ANALYSIS
-# -----------------------------
-def analyze_moat(company):
+def compare_moats(companies):
 
-    industry = detect_industry(company)
-
-    focus = INDUSTRY_WEIGHTS[industry]["focus"]
+    company_text = ", ".join(companies)
 
     prompt = f"""
-Analyze company: {company}
+You are an elite institutional investor.
 
-Industry: {industry}
+Compare the competitive moats of these companies:
 
-Important industry moat focus:
-{focus}
+{company_text}
+
+For EACH company analyze:
+- Brand
+- Network Effects
+- Switching Costs
+- Ecosystem
+- Pricing Power
+- Data Advantages
+- Durability
+- Weaknesses
+
+Then provide:
+1. Ranking from strongest moat to weakest
+2. Explanation for rankings
+3. Most undervalued moat
+4. Most overestimated moat
+5. Which company has the highest probability of moat expansion over 10 years
+6. Final winner
+
+Formatting:
+- Clean UI-friendly formatting
+- No markdown tables
+- Professional investment tone
 """
 
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[
-            {"role": "system", "content": MOAT_PROMPT},
-            {"role": "user", "content": prompt}
-        ]
+            {
+                "role": "system",
+                "content": "You are a world-class moat strategist."
+            },
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        temperature=0.5,
+        max_tokens=3000
     )
 
-    result = response.choices[0].message.content
+    save_history(company_text, "Comparison")
 
-    audit = consistency_check(result)
+    return response.choices[0].message.content
 
-    final_result = result + "\n\nConsistency Audit:\n" + audit
+# =========================
+# MOAT STRENGTH SCORE
+# =========================
 
-    # SAVE HISTORY
-    history = load_history()
+def moat_score(company):
 
-    if company not in history:
-        history[company] = []
+    prompt = f"""
+Give {company} a moat strength score from 0 to 100.
 
-    history[company].append({
-        "timestamp": str(datetime.now()),
-        "result": final_result
-    })
+Scoring factors:
+- Brand
+- Network effects
+- Switching costs
+- Ecosystem lock-in
+- Pricing power
+- Competitive positioning
+- Durability
+- Capital intensity barriers
 
-    save_history(history)
+Return ONLY this format:
 
-    return final_result
-
-
-# -----------------------------
-# COMPARISON MODE
-# -----------------------------
-def compare_moats(companies):
+Score: X/100
+Reason: short explanation
+"""
 
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[
-            {"role": "system", "content": MOAT_PROMPT},
+            {
+                "role": "system",
+                "content": "You are an institutional moat scoring engine."
+            },
             {
                 "role": "user",
-                "content": f"Compare moat strength of these companies: {companies}"
+                "content": prompt
             }
-        ]
+        ],
+        temperature=0.3,
+        max_tokens=300
     )
 
     return response.choices[0].message.content
 
+# =========================
+# INDUSTRY POSITIONING
+# =========================
 
-# -----------------------------
-# HISTORY RETRIEVAL
-# -----------------------------
-def get_history(company):
+def industry_position(company):
 
-    history = load_history()
+    prompt = f"""
+Analyze the industry positioning of {company}.
 
-    return history.get(company, [])
+Include:
+- Competitive advantages
+- Industry dominance
+- Key competitors
+- Market structure
+- Risk of disruption
+- Market share durability
+- Ability to compound over 10 years
+
+Professional investment tone.
+"""
+
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[
+            {
+                "role": "system",
+                "content": "You are an elite market structure analyst."
+            },
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        temperature=0.5,
+        max_tokens=1800
+    )
+
+    return response.choices[0].message.content
+
+# =========================
+# MOAT EXPANSION ANALYSIS
+# =========================
+
+def moat_expansion(company):
+
+    prompt = f"""
+Analyze whether {company}'s moat is expanding or shrinking.
+
+Discuss:
+- AI advantages
+- Ecosystem expansion
+- Customer lock-in trends
+- Margins
+- Strategic positioning
+- International expansion
+- Competitive threats
+- Future moat trajectory
+
+Then conclude:
+- Expanding
+- Stable
+- Shrinking
+
+Explain why.
+"""
+
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[
+            {
+                "role": "system",
+                "content": "You are a long-term moat trajectory analyst."
+            },
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        temperature=0.5,
+        max_tokens=1800
+    )
+
+    return response.choices[0].message.content

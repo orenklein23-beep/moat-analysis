@@ -8,28 +8,20 @@ from openai import OpenAI
 # SAFE API KEY SETUP
 # =========================
 
-api_key = None
+api_key = os.getenv("GROQ_API_KEY")
 
-# Try local environment first
-try:
-    api_key = os.getenv("GROQ_API_KEY")
-except:
-    pass
-
-# Try Streamlit secrets second
-try:
-    if not api_key:
-        api_key = st.secrets.get("GROQ_API_KEY")
-except:
-    pass
-
-# Final safety check
 if not api_key:
-    st.error("GROQ_API_KEY not found.")
+    try:
+        api_key = st.secrets["GROQ_API_KEY"]
+    except:
+        api_key = None
+
+if not api_key:
+    st.error("Missing GROQ_API_KEY")
     st.stop()
 
 # =========================
-# OPENAI / GROQ CLIENT
+# OPENAI CLIENT
 # =========================
 
 client = OpenAI(
@@ -38,17 +30,14 @@ client = OpenAI(
 )
 
 # =========================
-# SESSION HISTORY
-# =========================
-
-if "history" not in st.session_state:
-    st.session_state["history"] = []
-
-# =========================
 # SAVE HISTORY
 # =========================
 
 def save_history(company, analysis_type):
+
+    # ALWAYS ensure history exists
+    if "history" not in st.session_state:
+        st.session_state["history"] = []
 
     entry = {
         "company": company,
@@ -65,7 +54,7 @@ def save_history(company, analysis_type):
 def get_history():
 
     if "history" not in st.session_state:
-        return []
+        st.session_state["history"] = []
 
     return list(reversed(st.session_state["history"]))
 
@@ -92,7 +81,7 @@ Analyze:
 9. Regulatory Advantages
 10. Long-Term Survivability
 
-For EACH:
+For EACH category:
 - score out of 10
 - explanation
 - moat risks

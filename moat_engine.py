@@ -26,11 +26,11 @@ client = OpenAI(
 )
 
 # =========================
-# SESSION HISTORY
+# HISTORY STORAGE
 # =========================
 
 if "history" not in st.session_state:
-    st.session_state.history = []
+    st.session_state["history"] = []
 
 # =========================
 # SAVE HISTORY
@@ -38,18 +38,24 @@ if "history" not in st.session_state:
 
 def save_history(company, analysis_type):
 
-    st.session_state.history.append({
+    new_entry = {
         "company": company,
         "type": analysis_type,
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    })
+    }
+
+    st.session_state["history"].append(new_entry)
 
 # =========================
 # GET HISTORY
 # =========================
 
 def get_history():
-    return st.session_state.history[::-1]
+
+    if "history" not in st.session_state:
+        return []
+
+    return list(reversed(st.session_state["history"]))
 
 # =========================
 # SINGLE MOAT ANALYSIS

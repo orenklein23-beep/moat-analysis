@@ -5,20 +5,32 @@ import streamlit as st
 from openai import OpenAI
 
 # =========================
-# API SETUP
+# SAFE API KEY SETUP
 # =========================
 
-api_key = os.getenv("GROQ_API_KEY")
+api_key = None
 
+# Try local environment first
 try:
-    if not api_key:
-        api_key = st.secrets["GROQ_API_KEY"]
+    api_key = os.getenv("GROQ_API_KEY")
 except:
     pass
 
+# Try Streamlit secrets second
+try:
+    if not api_key:
+        api_key = st.secrets.get("GROQ_API_KEY")
+except:
+    pass
+
+# Final safety check
 if not api_key:
-    st.error("Missing GROQ_API_KEY")
+    st.error("GROQ_API_KEY not found.")
     st.stop()
+
+# =========================
+# OPENAI / GROQ CLIENT
+# =========================
 
 client = OpenAI(
     api_key=api_key,
@@ -26,7 +38,7 @@ client = OpenAI(
 )
 
 # =========================
-# HISTORY STORAGE
+# SESSION HISTORY
 # =========================
 
 if "history" not in st.session_state:
@@ -38,13 +50,13 @@ if "history" not in st.session_state:
 
 def save_history(company, analysis_type):
 
-    new_entry = {
+    entry = {
         "company": company,
         "type": analysis_type,
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
 
-    st.session_state["history"].append(new_entry)
+    st.session_state["history"].append(entry)
 
 # =========================
 # GET HISTORY
@@ -66,10 +78,9 @@ def analyze_moat(company):
     prompt = f"""
 You are an elite institutional equity analyst.
 
-Your job is to deeply analyze the competitive moat of {company}.
+Deeply analyze the competitive moat of {company}.
 
-Analyze using these categories:
-
+Analyze:
 1. Brand Power
 2. Network Effects
 3. Switching Costs
@@ -81,24 +92,20 @@ Analyze using these categories:
 9. Regulatory Advantages
 10. Long-Term Survivability
 
-For EACH category:
-- Give a score out of 10
-- Explain WHY
-- Explain risks to the moat
+For EACH:
+- score out of 10
+- explanation
+- moat risks
 
 Then provide:
-- Overall moat score out of 100
-- Moat durability rating
-- Biggest strength
-- Biggest weakness
-- 5-year moat outlook
-- Final investment-style conclusion
+- overall moat score out of 100
+- moat durability
+- biggest strength
+- biggest weakness
+- 5-year outlook
+- investment conclusion
 
-Formatting rules:
-- Clean formatting
-- No markdown tables
-- No weird separators
-- Professional hedge-fund tone
+Professional hedge-fund tone.
 """
 
     response = client.chat.completions.create(
@@ -106,7 +113,7 @@ Formatting rules:
         messages=[
             {
                 "role": "system",
-                "content": "You are a top-tier hedge fund moat analyst."
+                "content": "You are a world-class moat analyst."
             },
             {
                 "role": "user",
@@ -130,34 +137,26 @@ def compare_moats(companies):
     company_text = ", ".join(companies)
 
     prompt = f"""
-You are an elite institutional investor.
-
 Compare the competitive moats of these companies:
 
 {company_text}
 
-For EACH company analyze:
+For each company analyze:
 - Brand
-- Network Effects
-- Switching Costs
+- Network effects
+- Switching costs
 - Ecosystem
-- Pricing Power
-- Data Advantages
+- Pricing power
 - Durability
 - Weaknesses
 
 Then provide:
-1. Ranking from strongest moat to weakest
-2. Explanation for rankings
-3. Most undervalued moat
-4. Most overestimated moat
-5. Which company has the highest probability of moat expansion over 10 years
-6. Final winner
+1. strongest moat ranking
+2. moat explanations
+3. moat expansion potential
+4. final winner
 
-Formatting:
-- Clean UI-friendly formatting
-- No markdown tables
-- Professional investment tone
+Professional investment tone.
 """
 
     response = client.chat.completions.create(
@@ -165,7 +164,7 @@ Formatting:
         messages=[
             {
                 "role": "system",
-                "content": "You are a world-class moat strategist."
+                "content": "You are an institutional moat strategist."
             },
             {
                 "role": "user",
@@ -187,22 +186,18 @@ Formatting:
 def moat_score(company):
 
     prompt = f"""
-Give {company} a moat strength score from 0 to 100.
+Give {company} a moat score from 0 to 100.
 
-Scoring factors:
-- Brand
-- Network effects
-- Switching costs
-- Ecosystem lock-in
-- Pricing power
-- Competitive positioning
-- Durability
-- Capital intensity barriers
+Include:
+- brand
+- switching costs
+- network effects
+- pricing power
+- durability
 
-Return ONLY this format:
-
+Return:
 Score: X/100
-Reason: short explanation
+Reason: explanation
 """
 
     response = client.chat.completions.create(
@@ -210,7 +205,7 @@ Reason: short explanation
         messages=[
             {
                 "role": "system",
-                "content": "You are an institutional moat scoring engine."
+                "content": "You are a moat scoring engine."
             },
             {
                 "role": "user",
@@ -232,16 +227,12 @@ def industry_position(company):
     prompt = f"""
 Analyze the industry positioning of {company}.
 
-Include:
-- Competitive advantages
-- Industry dominance
-- Key competitors
-- Market structure
-- Risk of disruption
-- Market share durability
-- Ability to compound over 10 years
-
-Professional investment tone.
+Discuss:
+- dominance
+- competitors
+- disruption risk
+- market durability
+- long-term compounding potential
 """
 
     response = client.chat.completions.create(
@@ -249,7 +240,7 @@ Professional investment tone.
         messages=[
             {
                 "role": "system",
-                "content": "You are an elite market structure analyst."
+                "content": "You are an industry structure analyst."
             },
             {
                 "role": "user",
@@ -263,30 +254,23 @@ Professional investment tone.
     return response.choices[0].message.content
 
 # =========================
-# MOAT EXPANSION ANALYSIS
+# MOAT EXPANSION
 # =========================
 
 def moat_expansion(company):
 
     prompt = f"""
-Analyze whether {company}'s moat is expanding or shrinking.
+Analyze whether {company}'s moat is:
+- expanding
+- stable
+- shrinking
 
 Discuss:
-- AI advantages
-- Ecosystem expansion
-- Customer lock-in trends
-- Margins
-- Strategic positioning
-- International expansion
-- Competitive threats
-- Future moat trajectory
-
-Then conclude:
-- Expanding
-- Stable
-- Shrinking
-
-Explain why.
+- AI
+- ecosystem
+- customer lock-in
+- strategic positioning
+- future durability
 """
 
     response = client.chat.completions.create(
@@ -294,7 +278,7 @@ Explain why.
         messages=[
             {
                 "role": "system",
-                "content": "You are a long-term moat trajectory analyst."
+                "content": "You are a moat trajectory analyst."
             },
             {
                 "role": "user",

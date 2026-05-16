@@ -1,4 +1,3 @@
-import json
 import os
 from datetime import datetime
 
@@ -27,47 +26,30 @@ client = OpenAI(
 )
 
 # =========================
-# HISTORY FILE
+# SESSION HISTORY
 # =========================
 
-HISTORY_FILE = "moat_history.json"
+if "history" not in st.session_state:
+    st.session_state.history = []
 
 # =========================
 # SAVE HISTORY
 # =========================
 
 def save_history(company, analysis_type):
-    history = []
 
-    if os.path.exists(HISTORY_FILE):
-        try:
-            with open(HISTORY_FILE, "r") as f:
-                history = json.load(f)
-        except:
-            history = []
-
-    history.append({
+    st.session_state.history.append({
         "company": company,
         "type": analysis_type,
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     })
-
-    with open(HISTORY_FILE, "w") as f:
-        json.dump(history[-50:], f, indent=2)
 
 # =========================
 # GET HISTORY
 # =========================
 
 def get_history():
-    if not os.path.exists(HISTORY_FILE):
-        return []
-
-    try:
-        with open(HISTORY_FILE, "r") as f:
-            return json.load(f)
-    except:
-        return []
+    return st.session_state.history[::-1]
 
 # =========================
 # SINGLE MOAT ANALYSIS
@@ -193,7 +175,7 @@ Formatting:
     return response.choices[0].message.content
 
 # =========================
-# MOAT STRENGTH SCORE
+# MOAT SCORE
 # =========================
 
 def moat_score(company):

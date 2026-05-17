@@ -1,224 +1,250 @@
 import streamlit as st
+
 from moat_engine import (
     analyze_moat,
     compare_moats,
-    get_history
+    moat_score,
+    industry_position,
+    moat_expansion
 )
 
-# -----------------------------------
+# =========================
 # PAGE CONFIG
-# -----------------------------------
+# =========================
+
 st.set_page_config(
-    page_title="MoatIQ Terminal",
-    page_icon="📈",
+    page_title="Moatiq",
+    page_icon="🧠",
     layout="wide"
 )
 
-# -----------------------------------
+# =========================
 # CUSTOM CSS
-# -----------------------------------
+# =========================
+
 st.markdown("""
 <style>
 
-html, body, [class*="css"] {
-    background-color: #0e1117;
-    color: white;
-    font-family: Arial;
-}
-
 .main {
     background-color: #0e1117;
-}
-
-h1, h2, h3 {
     color: white;
 }
 
-section[data-testid="stSidebar"] {
-    background-color: #111827;
-    border-right: 1px solid #222;
+.block-container {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+    max-width: 1200px;
 }
 
-.stButton>button {
-    background-color: #f59e0b;
-    color: black;
-    border-radius: 8px;
-    border: none;
-    padding: 0.6rem 1rem;
-    font-weight: bold;
+h1 {
+    font-size: 3rem;
+    font-weight: 700;
 }
 
-.stButton>button:hover {
-    background-color: #fbbf24;
-    color: black;
+.stButton > button {
+    width: 100%;
+    border-radius: 12px;
+    height: 3em;
+    font-size: 16px;
+    font-weight: 600;
 }
 
-.metric-box {
-    background-color: #111827;
-    padding: 20px;
-    border-radius: 10px;
-    border: 1px solid #222;
-    margin-bottom: 20px;
+.stTextInput > div > div > input {
+    border-radius: 12px;
 }
 
 .result-box {
     background-color: #111827;
     padding: 25px;
-    border-radius: 12px;
-    border: 1px solid #333;
+    border-radius: 16px;
     margin-top: 20px;
-    line-height: 1.7;
-}
-
-.small-text {
-    color: #9ca3af;
-    font-size: 14px;
+    border: 1px solid #222;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
-# -----------------------------------
+# =========================
 # HEADER
-# -----------------------------------
-st.title("🧠 MoatIQ Terminal")
+# =========================
 
-st.markdown("""
-<div class="small-text">
-Institutional Competitive Advantage Research System
-</div>
-""", unsafe_allow_html=True)
+st.title("🧠 Moatiq")
+st.caption("AI-Powered Competitive Moat Intelligence")
 
-st.markdown("---")
-
-# -----------------------------------
+# =========================
 # SIDEBAR
-# -----------------------------------
-mode = st.sidebar.selectbox(
-    "Research Mode",
+# =========================
+
+st.sidebar.title("Mode")
+
+mode = st.sidebar.radio(
+    "Choose Analysis Type",
     [
-        "Single Analysis",
+        "Single Company",
         "Compare Companies",
-        "Peer Benchmark",
-        "History Tracker"
+        "Moat Score",
+        "Industry Position",
+        "Moat Expansion"
     ]
 )
 
-st.sidebar.markdown("---")
-st.sidebar.markdown("### System")
-st.sidebar.markdown("Model: Llama 3.3 70B")
-st.sidebar.markdown("Framework: Institutional Moat Analysis")
-st.sidebar.markdown("Version: v5")
+# =========================
+# SINGLE COMPANY
+# =========================
 
-# -----------------------------------
-# SINGLE ANALYSIS
-# -----------------------------------
-if mode == "Single Analysis":
+if mode == "Single Company":
 
     st.subheader("Single Company Moat Analysis")
 
     company = st.text_input(
-        "Company",
+        "Enter Company Name",
         placeholder="Apple"
     )
 
-    if st.button("Run Analysis"):
+    if st.button("Analyze Moat"):
 
-        with st.spinner("Running institutional moat analysis..."):
+        if company:
 
-            result = analyze_moat(company)
+            with st.spinner("Analyzing moat..."):
 
-        st.markdown("""
-        <div class="result-box">
-        """, unsafe_allow_html=True)
+                result = analyze_moat(company)
 
-        st.write(result)
+            st.markdown(
+                f"""
+                <div class="result-box">
+                {result}
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
-        st.markdown("</div>", unsafe_allow_html=True)
+# =========================
+# COMPARE COMPANIES
+# =========================
 
-# -----------------------------------
-# COMPARE MODE
-# -----------------------------------
 elif mode == "Compare Companies":
 
-    st.subheader("Company Comparison")
+    st.subheader("Compare Competitive Moats")
 
-    col1, col2 = st.columns(2)
-
-    with col1:
-        c1 = st.text_input("Company 1", "Apple")
-
-    with col2:
-        c2 = st.text_input("Company 2", "Microsoft")
+    companies = st.text_input(
+        "Enter Companies (comma separated)",
+        placeholder="Apple, Microsoft, Google"
+    )
 
     if st.button("Compare Moats"):
 
-        with st.spinner("Comparing competitive advantages..."):
+        if companies:
 
-            result = compare_moats([c1, c2])
+            company_list = [
+                c.strip() for c in companies.split(",")
+            ]
 
-        st.markdown("""
-        <div class="result-box">
-        """, unsafe_allow_html=True)
+            with st.spinner("Comparing moats..."):
 
-        st.write(result)
+                result = compare_moats(company_list)
 
-        st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown(
+                f"""
+                <div class="result-box">
+                {result}
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
-# -----------------------------------
-# PEER BENCHMARK
-# -----------------------------------
-elif mode == "Peer Benchmark":
+# =========================
+# MOAT SCORE
+# =========================
 
-    st.subheader("Peer Benchmark Ranking")
+elif mode == "Moat Score":
 
-    companies = st.text_area(
-        "Enter Companies",
-        "Apple, Microsoft, Google"
-    )
-
-    if st.button("Rank Companies"):
-
-        with st.spinner("Ranking moat strength..."):
-
-            result = compare_moats(companies)
-
-        st.markdown("""
-        <div class="result-box">
-        """, unsafe_allow_html=True)
-
-        st.write(result)
-
-        st.markdown("</div>", unsafe_allow_html=True)
-
-# -----------------------------------
-# HISTORY TRACKER
-# -----------------------------------
-elif mode == "History Tracker":
-
-    st.subheader("Historical Analysis Archive")
+    st.subheader("Moat Strength Score")
 
     company = st.text_input(
-        "Company",
-        "Apple"
+        "Enter Company",
+        placeholder="Amazon"
     )
 
-    if st.button("Load History"):
+    if st.button("Generate Score"):
 
-        history = get_history(company)
+        if company:
 
-        if not history:
-            st.warning("No history available yet.")
+            with st.spinner("Scoring moat..."):
 
-        else:
+                result = moat_score(company)
 
-            for item in reversed(history[-10:]):
-
-                st.markdown(f"""
+            st.markdown(
+                f"""
                 <div class="result-box">
-                <h4>{item['timestamp']}</h4>
-                """, unsafe_allow_html=True)
+                {result}
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
-                st.write(item["result"])
+# =========================
+# INDUSTRY POSITION
+# =========================
 
-                st.markdown("</div>", unsafe_allow_html=True)
+elif mode == "Industry Position":
+
+    st.subheader("Industry Positioning Analysis")
+
+    company = st.text_input(
+        "Enter Company",
+        placeholder="NVIDIA"
+    )
+
+    if st.button("Analyze Industry Position"):
+
+        if company:
+
+            with st.spinner("Analyzing industry positioning..."):
+
+                result = industry_position(company)
+
+            st.markdown(
+                f"""
+                <div class="result-box">
+                {result}
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+# =========================
+# MOAT EXPANSION
+# =========================
+
+elif mode == "Moat Expansion":
+
+    st.subheader("Moat Expansion Analysis")
+
+    company = st.text_input(
+        "Enter Company",
+        placeholder="Meta"
+    )
+
+    if st.button("Analyze Expansion"):
+
+        if company:
+
+            with st.spinner("Analyzing moat trajectory..."):
+
+                result = moat_expansion(company)
+
+            st.markdown(
+                f"""
+                <div class="result-box">
+                {result}
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+# =========================
+# FOOTER
+# =========================
+
+st.markdown("---")
+st.caption("Moatiq • AI Moat Intelligence Platform")

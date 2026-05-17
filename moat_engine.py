@@ -1,11 +1,10 @@
 import os
-from datetime import datetime
 
 import streamlit as st
 from openai import OpenAI
 
 # =========================
-# SAFE API KEY SETUP
+# API KEY SETUP
 # =========================
 
 api_key = os.getenv("GROQ_API_KEY")
@@ -21,42 +20,13 @@ if not api_key:
     st.stop()
 
 # =========================
-# OPENAI CLIENT
+# GROQ CLIENT
 # =========================
 
 client = OpenAI(
     api_key=api_key,
     base_url="https://api.groq.com/openai/v1"
 )
-
-# =========================
-# SAVE HISTORY
-# =========================
-
-def save_history(company, analysis_type):
-
-    # ALWAYS ensure history exists
-    if "history" not in st.session_state:
-        st.session_state["history"] = []
-
-    entry = {
-        "company": company,
-        "type": analysis_type,
-        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    }
-
-    st.session_state["history"].append(entry)
-
-# =========================
-# GET HISTORY
-# =========================
-
-def get_history():
-
-    if "history" not in st.session_state:
-        st.session_state["history"] = []
-
-    return list(reversed(st.session_state["history"]))
 
 # =========================
 # SINGLE MOAT ANALYSIS
@@ -113,8 +83,6 @@ Professional hedge-fund tone.
         max_tokens=2500
     )
 
-    save_history(company, "Single Analysis")
-
     return response.choices[0].message.content
 
 # =========================
@@ -163,8 +131,6 @@ Professional investment tone.
         temperature=0.5,
         max_tokens=3000
     )
-
-    save_history(company_text, "Comparison")
 
     return response.choices[0].message.content
 

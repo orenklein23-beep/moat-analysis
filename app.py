@@ -8,9 +8,9 @@ from moat_engine import (
     moat_expansion
 )
 
-# =========================
+# =====================================
 # PAGE CONFIG
-# =========================
+# =====================================
 
 st.set_page_config(
     page_title="Moatiq",
@@ -18,33 +18,35 @@ st.set_page_config(
     layout="wide"
 )
 
-# =========================
-# CUSTOM CSS
-# =========================
+# =====================================
+# CUSTOM STYLING
+# =====================================
 
 st.markdown("""
 <style>
 
+html, body, [class*="css"] {
+    font-family: sans-serif;
+}
+
 .main {
     background-color: #0e1117;
-    color: white;
 }
 
 .block-container {
     padding-top: 2rem;
-    padding-bottom: 2rem;
     max-width: 1200px;
 }
 
 h1 {
-    font-size: 3rem;
-    font-weight: 700;
+    font-size: 3.5rem;
+    font-weight: 800;
 }
 
 .stButton > button {
     width: 100%;
     border-radius: 12px;
-    height: 3em;
+    height: 3.2em;
     font-size: 16px;
     font-weight: 600;
 }
@@ -55,25 +57,25 @@ h1 {
 
 .result-box {
     background-color: #111827;
-    padding: 25px;
-    border-radius: 16px;
-    margin-top: 20px;
-    border: 1px solid #222;
+    padding: 28px;
+    border-radius: 18px;
+    margin-top: 25px;
+    border: 1px solid #1f2937;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
-# =========================
+# =====================================
 # HEADER
-# =========================
+# =====================================
 
 st.title("🧠 Moatiq")
 st.caption("AI-Powered Competitive Moat Intelligence")
 
-# =========================
+# =====================================
 # SIDEBAR
-# =========================
+# =====================================
 
 st.sidebar.title("Mode")
 
@@ -88,9 +90,9 @@ mode = st.sidebar.radio(
     ]
 )
 
-# =========================
+# =====================================
 # SINGLE COMPANY
-# =========================
+# =====================================
 
 if mode == "Single Company":
 
@@ -103,7 +105,9 @@ if mode == "Single Company":
 
     if st.button("Analyze Moat"):
 
-        if company:
+        if company.strip() == "":
+            st.warning("Please enter a company.")
+        else:
 
             with st.spinner("Analyzing moat..."):
 
@@ -118,9 +122,9 @@ if mode == "Single Company":
                 unsafe_allow_html=True
             )
 
-# =========================
+# =====================================
 # COMPARE COMPANIES
-# =========================
+# =====================================
 
 elif mode == "Compare Companies":
 
@@ -133,7 +137,9 @@ elif mode == "Compare Companies":
 
     if st.button("Compare Moats"):
 
-        if companies:
+        if companies.strip() == "":
+            st.warning("Please enter companies.")
+        else:
 
             company_list = [
                 c.strip() for c in companies.split(",")
@@ -152,9 +158,9 @@ elif mode == "Compare Companies":
                 unsafe_allow_html=True
             )
 
-# =========================
+# =====================================
 # MOAT SCORE
-# =========================
+# =====================================
 
 elif mode == "Moat Score":
 
@@ -167,9 +173,11 @@ elif mode == "Moat Score":
 
     if st.button("Generate Score"):
 
-        if company:
+        if company.strip() == "":
+            st.warning("Please enter a company.")
+        else:
 
-            with st.spinner("Scoring moat..."):
+            with st.spinner("Generating score..."):
 
                 result = moat_score(company)
 
@@ -182,9 +190,9 @@ elif mode == "Moat Score":
                 unsafe_allow_html=True
             )
 
-# =========================
+# =====================================
 # INDUSTRY POSITION
-# =========================
+# =====================================
 
 elif mode == "Industry Position":
 
@@ -197,7 +205,9 @@ elif mode == "Industry Position":
 
     if st.button("Analyze Industry Position"):
 
-        if company:
+        if company.strip() == "":
+            st.warning("Please enter a company.")
+        else:
 
             with st.spinner("Analyzing industry positioning..."):
 
@@ -212,9 +222,9 @@ elif mode == "Industry Position":
                 unsafe_allow_html=True
             )
 
-# =========================
+# =====================================
 # MOAT EXPANSION
-# =========================
+# =====================================
 
 elif mode == "Moat Expansion":
 
@@ -227,7 +237,9 @@ elif mode == "Moat Expansion":
 
     if st.button("Analyze Expansion"):
 
-        if company:
+        if company.strip() == "":
+            st.warning("Please enter a company.")
+        else:
 
             with st.spinner("Analyzing moat trajectory..."):
 
@@ -242,9 +254,9 @@ elif mode == "Moat Expansion":
                 unsafe_allow_html=True
             )
 
-# =========================
+# =====================================
 # FOOTER
-# =========================
+# =====================================
 
 st.markdown("---")
 st.caption("Moatiq • AI Moat Intelligence Platform")
